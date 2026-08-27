@@ -1,107 +1,163 @@
+#다운로드폴더에서 uuid (드림핵폴더죽이기) 폴더 삭제하고파서 새 폴더에 다 집어넣기 
+#클라우드 AI 모델이 로컬 Python 도구를 선택해서 사용하는 소형 파일 정리 에이전트
+
 import os
 import json
 import shutil
+import zipfile
+import re #uuid관련
 from pathlib import Path
 from openai import OpenAI
+from send2trash import send2trash
 
 
 client = OpenAI(
-    api_key=os.getenv("OPENAI_API_KEY")
+    api_key=os.getenv("OPENAI_API_KEY") #터미널에 setx로 값넣어
 )
 
 TARGET_FOLDER = Path(
-    r"C:\Users\박지예\OneDrive\사진\문서"
+    r"C:\Users\박지예\Downloads"
 )
 
 tools = [
     {
         "type": "function",
-        "name": "list_files",
-        "description": "Get all file names in the target folder.",
+        "name": "find_dreamhack_items",
+        "description": ("Find folders and ZIP files in Downloads "
+            "whose names have UUID format."),
         "parameters": {
             "type": "object",
-            "properties": {}
+            "properties": {},
+            "additionalProperties": False
         }
     },
     {
-        "type": "function",
-        "name": "move_useless_files",
-        "description": (
-            "Move files classified as useless "
-            "into the 비유용 folder."
+        "type":"function",
+        "name":"delete_dreamhack_items",
+        "description":(
+            "Move confirmed UUID-named DreamHack items "
+            "to the Windows Recycle Bin."
         ),
         "parameters": {
             "type": "object",
             "properties": {
-                "file_names": {
+                "item_names": {
                     "type": "array",
                     "items": {
                         "type": "string"
                     }
                 }
             },
-            "required": ["file_names"]
+            "required": ["item_names"],
+            "additionalProperties": False
         }
     }
 ]
+ 
+UUID_PATTERN = re.compile(
+    r"^[0-9a-fA-F]{8}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{4}-"
+    r"[0-9a-fA-F]{12}$"
+)
+
+BACKUP_FOLDER = TARGET_FOLDER / "DreamHack_삭제대기"
+LOG_FILE = BACKUP_FOLDER / "move_log.json"
 
 
-def list_files():
-    file_names=[]
+def is_uuid_name(item): #uuid 판별하는 함수
+    # ZIP 파일이면 확장자를 제외한 이름을 검사
+    name = item.stem if item.is_file() else item.name
 
-    for file in TARGET_FOLDER.iterdir():
-        if file.is_file():
-            file_names.append(file.name)
-    return json.dumps(file_names,ensure_ascii=False)
+    return bool(UUID_PATTERN.fullmatch(name))
 
+def find_dreamhack_items():
+    candidates = []
 
-def move_useless_files(file_names):
-    useless_folder=TARGET_FOLDER / "비유용"
-    useless_folder.mkdir(exist_ok=True)
+    for item in TARGET_FOLDER.iterdir():
+        if not is_uuid_name(item):
+            continue
 
-    for file_name in file_names:
-        original_file=TARGET_FOLDER / file_name
-        new_location=useless_folder / file_name
+        # 폴더 또는 ZIP 파일만 포함
+        if item.is_dir():
+            candidates.append({
+                "name": item.name,
+                "type": "압축 해제 폴더"
+            })
 
-        shutil.move(
-            str(original_file),str(new_location)
+        elif item.is_file() and item.suffix.lower() == ".zip":
+            candidates.append({
+                "name": item.name,
+                "type": "ZIP 압축파일"
+            })
+
+    return json.dumps(
+        candidates,
+        ensure_ascii=False,
+        indent=2
+    )
+
+def move_dreamhack_items(item_names):
+    BACKUP_FOLDER.mkdir(exist_ok=True)
+
+    moved = []
+
+    for item_name in item_names:
+        source = TARGET_FOLDER / item_name
+        destination = BACKUP_FOLDER / item_name
+
+        if not source.exists():
+            continue
+
+        if not is_uuid_name(source):
+            continue
+
+        if destination.exists():
+            continue
+
+        shutil.move(str(source), str(destination))
+
+        moved.append({
+            "original": str(source),
+            "moved_to": str(destination)
+        })
+
+    with open(LOG_FILE, "w", encoding="utf-8") as file:
+        json.dump(
+            moved,
+            file,
+            ensure_ascii=False,
+            indent=2
         )
-    return "비유용 파일 이동 완료"
 
-def move_file(file_name, category):
-    # 이동할 파일의 원래 경로를 만든다.
-    # category 이름으로 목적지 폴더 경로를 만든다.
-    # 목적지 폴더가 없으면 생성한다.
-    # shutil.move()로 파일을 이동한다.
-    # 실행 결과를 문자열로 반환한다.
-    pass
+    return json.dumps({
+        "moved": [item["original"] for item in moved],
+        "message": "삭제대기 폴더로 이동했습니다."
+    }, ensure_ascii=False)
+
 
 def ask_agent(user_command, previous_response_id=None):
     response = client.responses.create(
         model="gpt-4o-mini",
 
         instructions="""
-You are a simple file classification agent.
+You are a DreamHack cleanup agent.
 
-First, use list_files to inspect the target folder.
+Use find_dreamhack_items to find UUID-named folders and
+UUID-named ZIP files in the Downloads folder.
 
-Classify the files into only two categories:
-유용 and 비유용.
+Treat these items as DreamHack file candidates based only
+on their UUID-formatted names. Do not inspect their contents.
 
-When showing the result, use this format:
+First show all candidates to the user. Do not delete them
+during classification.
 
-[유용]
-- file name
-- file name
+Only use delete_dreamhack_items after the user explicitly
+confirms that the displayed candidates should be deleted.
 
-[비유용]
-- file name
-- file name
-
-Do not move any files while classifying them.
-
-Only use move_useless_files after the user
-explicitly asks you to move the useless files.
+When deletion succeeds, explain that the items were moved
+to the Windows Recycle Bin.
 """,
 
         input=user_command,
@@ -115,16 +171,14 @@ explicitly asks you to move the useless files.
         for item in response.output:
             if item.type != "function_call":
                 continue
-
-            if item.name == "list_files":
-                result=list_files()
-
-            elif item.name == "move_useless_files":
+            if item.name == "find_dreamhack_items":
+                result = find_dreamhack_items()
+            elif item.name == "delete_dreamhack_items":
                 arguments = json.loads(item.arguments)
 
-                result = move_useless_files(
-                    arguments["file_names"])
-                
+                result = move_dreamhack_items(
+                    arguments["item_names"]
+                )
             else:
                 continue
 
@@ -155,7 +209,7 @@ def run_agent():
     previous_response_id = None
 
     while True:
-        user_command=input("You: ")
+        user_command=input("\nYou: ")
 
         if user_command.lower()=="exit": break
 
