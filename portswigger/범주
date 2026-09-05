@@ -1,0 +1,33 @@
+<topics>
+
+{server-side}
+1. sql injection 
+2. Authentication 3
+3. path traversal 2
+4. command injection 2
+5. business logic vulnerabilities
+5. information disclosure 1
+6. access Control 3
+7. file upload vulnerabilities 2
+9. SSRF (server-side request forgery) 2
+10. XXE injection 1
+12. API testing 2
+
+
+{client-side}
+1. XSS (cross site scripting) 3
+2. CSRF (cross site request forgery) 2
+3. CORS (Cross-origin resource sharing) 1
+4. clickjacking 1
+5. DOM-based vulnerabilities
+
+
+
+1주차: SQLi 3 + Auth 3 + Access Control 3 = 9개
+
+2주차: Path Traversal 2 + Command Injection 2 + File Upload 2 + Information Disclosure 1 = 7개
+
+3주차: XSS 3 + CSRF 2 + CORS 1 + DOM 1 = 7개
+
+4주차: API 2 + SSRF 2 + XXE 1 + NoSQL 1 + Clickjacking/WebSocket 중 1 = 7개
+
