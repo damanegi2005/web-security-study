@@ -27,3 +27,12 @@ Set-Cookie: Admin=false          ← "너는 관리자 아니야" (권한)
 풀이: 개발자도구 application -> cookie에서 admin 의 값을 false->true로 바꿈.
 그러고 다시 admin 패널 시도.
 
+
+[portswigger] User role can be modified in user profile
+목적) roleid=2 로 접근하여 admin 패널 접속가능하게만들기
+풀이) 버프수트 사용하여 /changeemail 리피터로 보내기. 그냥 send 바로 누르면 roleid=1임을 볼 수 있음. 
+바디 파라미터에 "roleid"=2 를 추가하여 send 하면 됨.
+그 open browser에서 연 페이지 말고 원래 페이지에서 공격하는거군.
+어느 엔드포인트에서 proxy할건지 (파라미터가 어디 담겨있는지 등) 시도해보기!
+
+
