@@ -20,3 +20,8 @@ goal:blind os command injection으로 10 second delay 만들어라.
 풀이: burp suite으로 파라미터 repeater 수정. 각 파라미터뒤에 < & sleep 10 #> 을 url 인코딩하여(%26%20sleep%2010%20%23) 응답이 10초만에 오는게 있는지 체크. email 파라미터가 취약했음. (blind라서 응답 command가 응답으로 안돌아옴!)
 *shell 문법에서 띄어쓰기 신경써야함. sleep 10# 와 sleep 10 # 다름.
 & sleep과 &sleep은 같음. shell이 &는 연산자로 구분가능한데 10#를 하나의 인자로 받아들일 수 있음.
+
+
+[portswigger] Blind OS command injection with output redirection
+goal: redirection을 통해 너가 입력한 command의 output을 capture해라. writable folder은 /var/www/images/에 있다. whomai를 실행하고, image loading URL을 사용하여 file의 content를 가져와라.
+풀이: 여러 파라미터 중 취약했던 email 파라미터를 =||whoami>/var/www/images/output.txt|| 로 바꾼다. (whoami 명령어에 대한 결과를 저 output.txt에 저장) 이후 image loading url을 이용하랬으니 상품 이미지가 등록되는 페이지를 intercept하여 헤더를 GET /image?filename=output.txt HTTP/2 로 수정한다. (기존: GET /product?productId=2 HTTP/2)
